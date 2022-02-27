@@ -7,8 +7,8 @@ const data = { text: 'hello world' };
 const obj = new Proxy(data, {
   // 拦截读取操作
   get(target, key) {
-    // 将副作用函数 effect 添加到存储副作用函数的桶中
-    bucket.add(effect);
+    // 将副作用函数 activeEffect 添加到存储副作用函数的桶中
+    bucket.add(activeEffect);
     // 返回属性值
     return target[key];
   },
@@ -21,11 +21,20 @@ const obj = new Proxy(data, {
   },
 });
 
-function effect() {
-  document.body.innerText = obj.text;
+// 用一个全局变量存储当前激活的 effect 函数
+let activeEffect;
+function effect(fn) {
+  // 当调用 effect 注册副作用函数时，将副作用函数复制给 activeEffect
+  activeEffect = fn;
+  // 执行副作用函数
+  fn();
 }
-effect();
+
+effect(() => {
+  console.log('effect run');
+  document.body.innerText = obj.text;
+});
 
 setTimeout(() => {
-  obj.text = 'hello vue3';
+  obj.text2 = 'hello vue3';
 }, 1000);
