@@ -22,6 +22,7 @@ const obj = new Proxy(data, {
 });
 
 function track(target, key) {
+  if (!activeEffect) return;
   let depsMap = bucket.get(target);
   if (!depsMap) {
     bucket.set(target, (depsMap = new Map()));
@@ -46,7 +47,13 @@ function trigger(target, key) {
         effectsToRun.add(effectFn);
       }
     });
-  effectsToRun.forEach((effectFn) => effectFn());
+  effectsToRun.forEach((effectFn) => {
+    if (effectFn.options.scheduler) {
+      effectFn.options.scheduler(effectFn);
+    } else {
+      effectFn();
+    }
+  });
   // effects && effects.forEach(effectFn => effectFn())
 }
 
@@ -55,7 +62,7 @@ let activeEffect;
 // effect 栈
 const effectStack = [];
 
-function effect(fn) {
+function effect(fn, options = {}) {
   const effectFn = () => {
     cleanup(effectFn);
     // 当调用 effect 注册副作用函数时，将副作用函数复制给 activeEffect
@@ -67,6 +74,8 @@ function effect(fn) {
     effectStack.pop();
     activeEffect = effectStack[effectStack.length - 1];
   };
+  // 将 options 挂在到 effectFn 上
+  effectFn.options = options;
   // activeEffect.deps 用来存储所有与该副作用函数相关的依赖集合
   effectFn.deps = [];
   // 执行副作用函数
@@ -83,7 +92,31 @@ function cleanup(effectFn) {
 
 // =========================
 
-effect(() => {
-  console.log(99);
-  obj.foo++;
-});
+const jobQueue = new Set();
+const p = Promise.resolve();
+
+let isFlushing = false;
+function flushJob() {
+  if (isFlushing) return;
+  isFlushing = true;
+  p.then(() => {
+    jobQueue.forEach((job) => job());
+  }).finally(() => {
+    isFlushing = false;
+  });
+}
+
+effect(
+  () => {
+    console.log(obj.foo);
+  },
+  {
+    scheduler(fn) {
+      jobQueue.add(fn);
+      flushJob();
+    },
+  }
+);
+
+obj.foo++;
+obj.foo++;
