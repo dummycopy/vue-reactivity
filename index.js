@@ -24,6 +24,7 @@ const obj = new Proxy(data, {
 function effect() {
   document.body.innerText = obj.text;
 }
+
 effect();
 
 // =================
