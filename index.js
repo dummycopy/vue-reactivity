@@ -2,7 +2,7 @@
 const bucket = new WeakMap();
 
 // 原始数据
-const data = { ok: true, text: 'hello world' };
+const data = { foo: true, bar: true };
 // 对原始数据的代理
 const obj = new Proxy(data, {
   // 拦截读取操作
@@ -47,12 +47,20 @@ function trigger(target, key) {
 
 // 用一个全局变量存储当前激活的 effect 函数
 let activeEffect;
+// effect 栈
+const effectStack = [];
+
 function effect(fn) {
   const effectFn = () => {
     cleanup(effectFn);
     // 当调用 effect 注册副作用函数时，将副作用函数复制给 activeEffect
     activeEffect = effectFn;
+    // 在调用副作用函数之前将当前副作用函数压栈
+    effectStack.push(effectFn);
     fn();
+    // 在当前副作用函数执行完毕后，将当前副作用函数弹出栈，并还原 activeEffect 为之前的值
+    effectStack.pop();
+    activeEffect = effectStack[effectStack.length - 1];
   };
   // activeEffect.deps 用来存储所有与该副作用函数相关的依赖集合
   effectFn.deps = [];
@@ -68,14 +76,19 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0;
 }
 
-effect(() => {
-  console.log('effect run');
-  document.body.innerText = obj.ok ? obj.text : 'not';
+// =========================
+
+let temp1, temp2;
+
+effect(function effectFn1() {
+  console.log('effectFn1 执行');
+  effect(function effectFn2() {
+    console.log('effectFn2 执行');
+    temp2 = obj.bar;
+  });
+  temp1 = obj.foo;
 });
 
 setTimeout(() => {
-  obj.ok = false;
-  setTimeout(() => {
-    obj.text = 'hello vue3';
-  }, 1000);
+  obj.foo = false;
 }, 1000);
