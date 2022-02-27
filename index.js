@@ -1,5 +1,5 @@
 // 存储副作用函数的桶
-const bucket = new Set();
+const bucket = new WeakMap();
 
 // 原始数据
 const data = { text: 'hello world' };
@@ -8,7 +8,16 @@ const obj = new Proxy(data, {
   // 拦截读取操作
   get(target, key) {
     // 将副作用函数 activeEffect 添加到存储副作用函数的桶中
-    bucket.add(activeEffect);
+    let depsMap = bucket.get(target);
+    if (!depsMap) {
+      bucket.set(target, (depsMap = new Map()));
+    }
+    let deps = depsMap.get(key);
+    if (!deps) {
+      depsMap.set(key, (deps = new Set()));
+    }
+    deps.add(activeEffect);
+
     // 返回属性值
     return target[key];
   },
@@ -17,7 +26,10 @@ const obj = new Proxy(data, {
     // 设置属性值
     target[key] = newVal;
     // 把副作用函数从桶里取出并执行
-    bucket.forEach((fn) => fn());
+    const depsMap = bucket.get(target);
+    if (!depsMap) return;
+    const effects = depsMap.get(key);
+    effects && effects.forEach((fn) => fn());
   },
 });
 
@@ -36,5 +48,5 @@ effect(() => {
 });
 
 setTimeout(() => {
-  obj.text2 = 'hello vue3';
+  obj.text = 'hello vue3';
 }, 1000);
