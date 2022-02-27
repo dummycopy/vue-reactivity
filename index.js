@@ -35,6 +35,8 @@ effect(() => {
   document.body.innerText = obj.text;
 });
 
-setTimeout(() => {
-  obj.text2 = 'hello vue3';
-}, 1000);
+// ========================
+
+// setTimeout(() => {
+//   obj.noExist = 'hello vue3';
+// }, 1000);
