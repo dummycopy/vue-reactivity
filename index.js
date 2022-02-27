@@ -29,6 +29,6 @@ effect();
 
 // =================
 
-setTimeout(() => {
-  obj.text = 'hello vue3';
-}, 1000);
+// setTimeout(() => {
+//   obj.text = 'hello vue3';
+// }, 1000);
