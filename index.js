@@ -50,5 +50,5 @@ effect(() => {
 // =======================
 
 // setTimeout(() => {
-//   obj.onExist = 'hello vue3';
+//   obj.text = 'hello vue3';
 // }, 1000);
