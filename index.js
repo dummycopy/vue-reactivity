@@ -8,16 +8,7 @@ const obj = new Proxy(data, {
   // 拦截读取操作
   get(target, key) {
     // 将副作用函数 activeEffect 添加到存储副作用函数的桶中
-    let depsMap = bucket.get(target);
-    if (!depsMap) {
-      bucket.set(target, (depsMap = new Map()));
-    }
-    let deps = depsMap.get(key);
-    if (!deps) {
-      depsMap.set(key, (deps = new Set()));
-    }
-    deps.add(activeEffect);
-
+    track(target, key);
     // 返回属性值
     return target[key];
   },
@@ -26,12 +17,28 @@ const obj = new Proxy(data, {
     // 设置属性值
     target[key] = newVal;
     // 把副作用函数从桶里取出并执行
-    const depsMap = bucket.get(target);
-    if (!depsMap) return;
-    const effects = depsMap.get(key);
-    effects && effects.forEach((fn) => fn());
+    trigger(target, key);
   },
 });
+
+function track(target, key) {
+  let depsMap = bucket.get(target);
+  if (!depsMap) {
+    bucket.set(target, (depsMap = new Map()));
+  }
+  let deps = depsMap.get(key);
+  if (!deps) {
+    depsMap.set(key, (deps = new Set()));
+  }
+  deps.add(activeEffect);
+}
+
+function trigger(target, key) {
+  const depsMap = bucket.get(target);
+  if (!depsMap) return;
+  const effects = depsMap.get(key);
+  effects && effects.forEach((fn) => fn());
+}
 
 // 用一个全局变量存储当前激活的 effect 函数
 let activeEffect;
@@ -48,5 +55,5 @@ effect(() => {
 });
 
 setTimeout(() => {
-  obj.text = 'hello vue3';
+  trigger(data, 'text');
 }, 1000);
