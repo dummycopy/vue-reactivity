@@ -26,6 +26,8 @@ function effect() {
 }
 effect();
 
+// =================
+
 setTimeout(() => {
   obj.text = 'hello vue3';
 }, 1000);
