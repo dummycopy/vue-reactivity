@@ -2,7 +2,7 @@
 const bucket = new WeakMap();
 
 // 原始数据
-const data = { foo: true, bar: true };
+const data = { foo: 1 };
 // 对原始数据的代理
 const obj = new Proxy(data, {
   // 拦截读取操作
@@ -40,7 +40,12 @@ function trigger(target, key) {
   const effects = depsMap.get(key);
 
   const effectsToRun = new Set();
-  effects && effects.forEach((effectFn) => effectsToRun.add(effectFn));
+  effects &&
+    effects.forEach((effectFn) => {
+      if (effectFn !== activeEffect) {
+        effectsToRun.add(effectFn);
+      }
+    });
   effectsToRun.forEach((effectFn) => effectFn());
   // effects && effects.forEach(effectFn => effectFn())
 }
@@ -78,17 +83,7 @@ function cleanup(effectFn) {
 
 // =========================
 
-let temp1, temp2;
-
-effect(function effectFn1() {
-  console.log('effectFn1 执行');
-  effect(function effectFn2() {
-    console.log('effectFn2 执行');
-    temp2 = obj.bar;
-  });
-  temp1 = obj.foo;
+effect(() => {
+  console.log(99);
+  obj.foo++;
 });
-
-setTimeout(() => {
-  obj.foo = false;
-}, 1000);
