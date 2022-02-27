@@ -2,7 +2,7 @@
 const bucket = new WeakMap();
 
 // 原始数据
-const data = { text: 'hello world' };
+const data = { ok: true, text: 'hello world' };
 // 对原始数据的代理
 const obj = new Proxy(data, {
   // 拦截读取操作
@@ -31,29 +31,51 @@ function track(target, key) {
     depsMap.set(key, (deps = new Set()));
   }
   deps.add(activeEffect);
+  activeEffect.deps.push(deps);
 }
 
 function trigger(target, key) {
   const depsMap = bucket.get(target);
   if (!depsMap) return;
   const effects = depsMap.get(key);
-  effects && effects.forEach((fn) => fn());
+
+  const effectsToRun = new Set();
+  effects && effects.forEach((effectFn) => effectsToRun.add(effectFn));
+  effectsToRun.forEach((effectFn) => effectFn());
+  // effects && effects.forEach(effectFn => effectFn())
 }
 
 // 用一个全局变量存储当前激活的 effect 函数
 let activeEffect;
 function effect(fn) {
-  // 当调用 effect 注册副作用函数时，将副作用函数复制给 activeEffect
-  activeEffect = fn;
+  const effectFn = () => {
+    cleanup(effectFn);
+    // 当调用 effect 注册副作用函数时，将副作用函数复制给 activeEffect
+    activeEffect = effectFn;
+    fn();
+  };
+  // activeEffect.deps 用来存储所有与该副作用函数相关的依赖集合
+  effectFn.deps = [];
   // 执行副作用函数
-  fn();
+  effectFn();
+}
+
+function cleanup(effectFn) {
+  for (let i = 0; i < effectFn.deps.length; i++) {
+    const deps = effectFn.deps[i];
+    deps.delete(effectFn);
+  }
+  effectFn.deps.length = 0;
 }
 
 effect(() => {
   console.log('effect run');
-  document.body.innerText = obj.text;
+  document.body.innerText = obj.ok ? obj.text : 'not';
 });
 
 setTimeout(() => {
-  trigger(data, 'text');
+  obj.ok = false;
+  setTimeout(() => {
+    obj.text = 'hello vue3';
+  }, 1000);
 }, 1000);
