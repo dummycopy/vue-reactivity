@@ -31,7 +31,7 @@ function effect(fn) {
 }
 
 effect(() => {
-  console.log('effect run');
+  console.log('effect run'); // 这里运行了2次
   document.body.innerText = obj.text;
 });
 
