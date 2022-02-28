@@ -2,7 +2,7 @@
 const bucket = new WeakMap();
 
 // 原始数据
-const data = { text: 'hello world' };
+const data = { text: 'hello world', ok: true };
 // 对原始数据的代理
 const obj = new Proxy(data, {
   // 拦截读取操作
@@ -51,9 +51,12 @@ function effect(fn) {
 
 effect(() => {
   console.log('effect run');
-  document.body.innerText = obj.text;
+  document.body.innerText = obj.ok ? obj.text : 'not';
 });
-
-setTimeout(() => {
-  trigger(data, 'text');
-}, 1000);
+// ======================================
+// setTimeout(() => {
+//   obj.ok = false;
+//   setTimeout(() => {
+//     obj.text = 'hello vue3';
+//   }, 1000);
+// }, 1000);
