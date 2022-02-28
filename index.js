@@ -39,8 +39,7 @@ function trigger(target, key) {
   if (!depsMap) return;
   const effects = depsMap.get(key);
 
-  const effectsToRun = new Set();
-  effects && effects.forEach((effectFn) => effectsToRun.add(effectFn));
+  const effectsToRun = new Set(effects);
   effectsToRun.forEach((effectFn) => effectFn());
   // effects && effects.forEach(effectFn => effectFn())
 }
